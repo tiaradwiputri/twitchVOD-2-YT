@@ -1,2 +1,10 @@
 .secret/
 .python-version
+.env
+downloads/
+*.mp4
+*.ts
+__pycache__/
+*.pyc
+.venv/
+venv/
