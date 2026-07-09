@@ -18,6 +18,26 @@ new VOD, downloads it, and uploads it.
 - `.github/workflows/upload_vod.yml` — runs `main.py` when triggered by Zapier
   (via `repository_dispatch`) or manually, and commits the updated state file
   back to the repo.
+- `manual_upload.py` — uploads one specific VOD by URL or id, for streams
+  that were missed (see below).
+
+## Uploading a missed stream manually
+
+`main.py` only ever looks at the 5 most recent VODs, so if one falls out of
+that window before it gets uploaded, the automated run will never pick it up.
+Use `manual_upload.py` instead, locally (with `.env` set up as below):
+
+```
+python manual_upload.py https://www.twitch.tv/videos/1234567890
+# or just the id:
+python manual_upload.py 1234567890
+```
+
+It looks up that specific VOD directly (regardless of how old it is),
+downloads and uploads it, and records it in `state/uploaded_vods.json` so it
+won't be picked up again later. If it's already in that file, it exits
+immediately without re-uploading. After running it, commit and push the
+updated state file so the automated runs stay in sync.
 
 ## One-time setup
 

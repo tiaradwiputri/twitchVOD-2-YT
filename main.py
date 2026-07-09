@@ -27,6 +27,33 @@ def download_vod(video_id, video_url):
     return output_path
 
 
+def process_vod(vod, uploaded_ids, youtube):
+    """Download and upload a single VOD. Returns True on success. Marks it
+    as uploaded (and persists state) only on success, so failures are safe
+    to retry."""
+    video_id = vod["id"]
+    title = vod["title"]
+    created_at = vod["created_at"]
+    url = vod["url"]
+
+    print(f"Processing VOD {video_id}: {title}")
+    file_path = None
+    try:
+        file_path = download_vod(video_id, url)
+        description = f"Originally streamed on Twitch: {url}\nStreamed at: {created_at}"
+        youtube_id = upload_video(youtube, file_path, title, description)
+        print(f"Uploaded to YouTube: https://youtu.be/{youtube_id}")
+        uploaded_ids.add(video_id)
+        save_uploaded_ids(uploaded_ids)
+        return True
+    except Exception as exc:
+        print(f"Failed to process VOD {video_id}: {exc}", file=sys.stderr)
+        return False
+    finally:
+        if file_path and os.path.exists(file_path):
+            os.remove(file_path)
+
+
 def main():
     twitch_client_id = os.environ["TWITCH_CLIENT_ID"]
     twitch_client_secret = os.environ["TWITCH_CLIENT_SECRET"]
@@ -49,25 +76,7 @@ def main():
     youtube = get_youtube_client(yt_client_id, yt_client_secret, yt_refresh_token)
 
     for vod in new_vods:
-        video_id = vod["id"]
-        title = vod["title"]
-        created_at = vod["created_at"]
-        url = vod["url"]
-
-        print(f"Processing VOD {video_id}: {title}")
-        file_path = None
-        try:
-            file_path = download_vod(video_id, url)
-            description = f"Originally streamed on Twitch: {url}\nStreamed at: {created_at}"
-            youtube_id = upload_video(youtube, file_path, title, description)
-            print(f"Uploaded to YouTube: https://youtu.be/{youtube_id}")
-            uploaded_ids.add(video_id)
-            save_uploaded_ids(uploaded_ids)
-        except Exception as exc:
-            print(f"Failed to process VOD {video_id}: {exc}", file=sys.stderr)
-        finally:
-            if file_path and os.path.exists(file_path):
-                os.remove(file_path)
+        process_vod(vod, uploaded_ids, youtube)
 
 
 if __name__ == "__main__":

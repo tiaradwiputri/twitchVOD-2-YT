@@ -28,3 +28,19 @@ def get_latest_vods(user_id, client_id, access_token, first=5):
     )
     response.raise_for_status()
     return response.json()["data"]
+
+
+def get_vod_by_id(video_id, client_id, access_token):
+    response = requests.get(
+        TWITCH_HELIX_VIDEOS_URL,
+        headers={
+            "Client-Id": client_id,
+            "Authorization": f"Bearer {access_token}",
+        },
+        params={"id": video_id},
+    )
+    response.raise_for_status()
+    data = response.json()["data"]
+    if not data:
+        raise ValueError(f"No Twitch VOD found with id {video_id}")
+    return data[0]
