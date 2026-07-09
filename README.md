@@ -61,14 +61,18 @@ python main.py
 
 ### 5. Add GitHub Actions secrets
 
-In the repo's Settings → Secrets and variables → Actions, add:
+Secrets live in the `TWITCH` environment (Settings → Environments → `TWITCH`
+→ Environment secrets — create the environment first if it doesn't exist).
+The workflow job declares `environment: TWITCH`, so these must be
+**environment** secrets, not repository secrets, and the names must match
+exactly:
 
 - `TWITCH_CLIENT_ID`
 - `TWITCH_CLIENT_SECRET`
 - `TWITCH_USER_ID`
-- `YT_CLIENT_ID`
-- `YT_CLIENT_SECRET`
-- `YT_REFRESH_TOKEN`
+- `YOUTUBE_CLIENT_ID`
+- `YOUTUBE_CLIENT_SECRET`
+- `YOUTUBE_REFRESH_TOKEN`
 
 ### 6. Test it
 
