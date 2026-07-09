@@ -1,8 +1,8 @@
 name: Upload Twitch VOD to YouTube
 
 on:
-  schedule:
-    - cron: "*/15 * * * *"
+  repository_dispatch:
+    types: [vod-ready]
   workflow_dispatch:
 
 permissions:

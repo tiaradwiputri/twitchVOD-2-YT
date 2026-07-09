@@ -1,8 +1,8 @@
 # twitchVOD-2-YT
 
-Automatically uploads new Twitch VODs to YouTube (as Unlisted videos). A GitHub
-Actions workflow polls for new VODs every 15 minutes, downloads them, and
-uploads anything new.
+Automatically uploads new Twitch VODs to YouTube (as Unlisted videos). Zapier
+triggers a GitHub Actions workflow after a stream ends, which checks for the
+new VOD, downloads it, and uploads it.
 
 ## How it works
 
@@ -15,8 +15,9 @@ uploads anything new.
   file → record it as uploaded.
 - `youtube_api.py` — builds a YouTube Data API client from a stored OAuth
   refresh token (no interactive login needed) and uploads videos.
-- `.github/workflows/upload_vod.yml` — runs `main.py` on a schedule (every 15
-  minutes) and commits the updated state file back to the repo.
+- `.github/workflows/upload_vod.yml` — runs `main.py` when triggered by Zapier
+  (via `repository_dispatch`) or manually, and commits the updated state file
+  back to the repo.
 
 ## One-time setup
 
@@ -72,9 +73,43 @@ In the repo's Settings → Secrets and variables → Actions, add:
 ### 6. Test it
 
 Trigger the workflow manually from the Actions tab ("Run workflow") to
-confirm it runs end-to-end before relying on the schedule.
+confirm it runs end-to-end before wiring up Zapier.
+
+### 7. Wire up Zapier
+
+Create a fine-grained GitHub personal access token
+(https://github.com/settings/personal-access-tokens) scoped to just this
+repo, with **Contents: Read and write** and **Actions: Read and write**
+permissions. Store it in Zapier, not as a GitHub Actions secret.
+
+In Zapier:
+
+1. **Trigger**: whatever signals your stream just ended, followed by a Delay
+   step (10–15 min is plenty for a ~1 hour stream to finish processing on
+   Twitch's side).
+2. **Action**: "Webhooks by Zapier" → POST to
+   `https://api.github.com/repos/tiaradwiputri/twitchVOD-2-YT/dispatches`
+   - Headers: `Authorization: Bearer <your PAT>`,
+     `Accept: application/vnd.github+json`
+   - Body: `{"event_type": "vod-ready"}`
+
+You can test this call yourself before wiring up Zapier:
+
+```
+curl -X POST \
+  -H "Authorization: Bearer <your PAT>" \
+  -H "Accept: application/vnd.github+json" \
+  https://api.github.com/repos/tiaradwiputri/twitchVOD-2-YT/dispatches \
+  -d '{"event_type":"vod-ready"}'
+```
+
+A successful call returns no output (204) and should show up as a new run
+in the Actions tab within a few seconds.
 
 ## Notes
 
 - Assumes VODs are public (no sub-only VOD support).
-- Very long VODs may approach GitHub-hosted runner disk/time limits.
+- Very long VODs may approach GitHub-hosted runner disk/time limits (not a
+  concern at ~1 hour per stream).
+- There's no schedule fallback — if the Zapier call never fires, no upload
+  happens. Use `workflow_dispatch` to run it manually if needed.
